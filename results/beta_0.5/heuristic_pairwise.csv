@@ -1,0 +1,7 @@
+method_a,method_b,n_instances,a_wins,b_wins,ties,mean_gap_pct,median_gap_pct,mean_runtime_ratio_a_over_b
+savings,tabu,73,0,58,15,30.6218,25.1139,0.0560
+savings,ga,73,6,52,15,17.1008,12.8821,0.0005
+tabu,savings,73,58,0,15,-19.8971,-20.0728,665.1335
+tabu,ga,73,54,4,15,-8.7889,-8.6760,0.1141
+ga,savings,73,52,6,15,-12.7499,-11.4120,11621.4193
+ga,tabu,73,4,54,15,10.8115,9.5002,101.1525

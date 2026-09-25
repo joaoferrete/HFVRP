@@ -1,0 +1,30 @@
+# Artefatos de compilacao
+*.o
+hfvrp
+
+# Saidas de execucao. A pasta results/ guarda a bateria final versionada;
+# tudo o que for gerado por novas execucoes vai para output/.
+output/
+*.log
+
+# Marcadores de bateria concluida, usados pelo run_beta_sweep.sh
+.done
+
+# Figuras e SVGs regeraveis a partir dos CSVs
+results/**/*.png
+results/**/*.pdf
+results/**/*.svg
+results/*.png
+results/*.pdf
+results/*.svg
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editores e sistema operacional
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
