@@ -6,18 +6,20 @@
 #include <list>
 #include <numeric>
 
+using namespace std;
+
 namespace hfvrp {
 
 namespace {
 
-double route_demand(const std::vector<int>& custs, const Instance& inst) {
+double route_demand(const vector<int>& custs, const Instance& inst) {
     double q = 0.0;
     for (int c : custs) q += inst.demand[c];
     return q;
 }
 
 // Contribuicao de uma rota ao objetivo, supondo que o veiculo k a execute.
-double route_cost(const std::vector<int>& custs, int k, const Instance& inst, double beta) {
+double route_cost(const vector<int>& custs, int k, const Instance& inst, double beta) {
     if (custs.empty()) return 0.0;
     const auto& veh = inst.vehicles[k];
     double t = 0.0, prio = 0.0;
@@ -44,14 +46,14 @@ bool two_opt_pass(Solution& sol, const Instance& inst, double beta) {
             const double base = route_cost(r.customers, k, inst, beta);
             for (size_t i = 0; i + 1 < r.customers.size(); ++i) {
                 for (size_t j = i + 1; j < r.customers.size(); ++j) {
-                    std::reverse(r.customers.begin() + i, r.customers.begin() + j + 1);
+                    reverse(r.customers.begin() + i, r.customers.begin() + j + 1);
                     const double nc = route_cost(r.customers, k, inst, beta);
                     if (nc + 1e-9 < base) {
                         improved = true;
                         any_improvement = true;
                         goto next_iter; // restart with the improved route
                     }
-                    std::reverse(r.customers.begin() + i, r.customers.begin() + j + 1);
+                    reverse(r.customers.begin() + i, r.customers.begin() + j + 1);
                 }
             }
             next_iter:;
@@ -67,11 +69,11 @@ Solution clarke_wright(const Instance& inst, double beta) {
 
     // Nenhuma fusao pode exceder a maior capacidade da frota.
     double max_cap = 0.0;
-    for (const auto& v : inst.vehicles) max_cap = std::max(max_cap, v.capacity);
+    for (const auto& v : inst.vehicles) max_cap = max(max_cap, v.capacity);
 
-    std::vector<std::list<int>> routes(N + 1);
-    std::vector<int> route_of(N + 1, 0);
-    std::vector<double> route_q(N + 1, 0.0);
+    vector<list<int>> routes(N + 1);
+    vector<int> route_of(N + 1, 0);
+    vector<double> route_q(N + 1, 0.0);
     for (int i = 1; i <= N; ++i) {
         routes[i].push_back(i);
         route_of[i] = i;
@@ -79,12 +81,12 @@ Solution clarke_wright(const Instance& inst, double beta) {
     }
 
     struct Saving { int i, j; double s; };
-    std::vector<Saving> svs;
+    vector<Saving> svs;
     svs.reserve(N * (N - 1) / 2);
     for (int i = 1; i <= N; ++i)
         for (int j = i + 1; j <= N; ++j)
             svs.push_back({i, j, inst.distance[0][i] + inst.distance[0][j] - inst.distance[i][j]});
-    std::sort(svs.begin(), svs.end(), [](const Saving& a, const Saving& b) { return a.s > b.s; });
+    sort(svs.begin(), svs.end(), [](const Saving& a, const Saving& b) { return a.s > b.s; });
 
     for (const auto& sv : svs) {
         const int ri = route_of[sv.i], rj = route_of[sv.j];
@@ -110,7 +112,7 @@ Solution clarke_wright(const Instance& inst, double beta) {
     }
 
     // Reune as rotas nao vazias produzidas pelas fusoes.
-    std::vector<std::vector<int>> collected;
+    vector<vector<int>> collected;
     for (int r = 1; r <= N; ++r)
         if (!routes[r].empty())
             collected.emplace_back(routes[r].begin(), routes[r].end());
@@ -121,16 +123,16 @@ Solution clarke_wright(const Instance& inst, double beta) {
     // recebe entao o menor veiculo que ainda a comporte, de modo que os
     // grandes permanecam livres para as rotas que deles precisam. O que
     // sobrar vai para o reparo adiante.
-    std::sort(collected.begin(), collected.end(),
-              [&](const std::vector<int>& a, const std::vector<int>& b) {
+    sort(collected.begin(), collected.end(),
+              [&](const vector<int>& a, const vector<int>& b) {
                   return route_demand(a, inst) > route_demand(b, inst);
               });
 
     // Veiculos livres em ordem crescente de capacidade: best-fit vira uma
     // varredura para a frente e back() e o maior ainda disponivel.
-    std::vector<int> avail(M);
-    std::iota(avail.begin(), avail.end(), 0);
-    std::sort(avail.begin(), avail.end(), [&](int a, int b) {
+    vector<int> avail(M);
+    iota(avail.begin(), avail.end(), 0);
+    sort(avail.begin(), avail.end(), [&](int a, int b) {
         return inst.vehicles[a].capacity < inst.vehicles[b].capacity;
     });
 
@@ -139,16 +141,16 @@ Solution clarke_wright(const Instance& inst, double beta) {
     for (int k = 0; k < M; ++k) sol.routes[k].vehicle_id = -1;
 
     auto take_best_fit = [&](double dem) -> int {
-        for (std::size_t i = 0; i < avail.size(); ++i)
+        for (size_t i = 0; i < avail.size(); ++i)
             if (inst.vehicles[avail[i]].capacity + 1e-9 >= dem) {
                 const int k = avail[i];
-                avail.erase(avail.begin() + static_cast<std::ptrdiff_t>(i));
+                avail.erase(avail.begin() + static_cast<ptrdiff_t>(i));
                 return k;
             }
         return -1;
     };
 
-    std::vector<int> leftover;
+    vector<int> leftover;
     for (const auto& custs : collected) {
         const int k = take_best_fit(route_demand(custs, inst));
         if (k < 0) {
@@ -163,21 +165,21 @@ Solution clarke_wright(const Instance& inst, double beta) {
     // Reparo: os clientes sem veiculo vao para a capacidade residual das
     // rotas ja atribuidas, na posicao que menos acrescenta distancia.
     if (!leftover.empty()) {
-        std::vector<double> load(M, 0.0);
+        vector<double> load(M, 0.0);
         for (int k = 0; k < M; ++k)
             load[k] = route_demand(sol.routes[k].customers, inst);
 
         for (int c : leftover) {
             const double d = inst.demand[c];
             int best_k = -1;
-            std::size_t best_pos = 0;
-            double best_delta = std::numeric_limits<double>::infinity();
+            size_t best_pos = 0;
+            double best_delta = numeric_limits<double>::infinity();
 
             for (int k = 0; k < M; ++k) {
                 if (sol.routes[k].vehicle_id < 0) continue;
                 if (load[k] + d > inst.vehicles[k].capacity + 1e-9) continue;
                 const auto& seq = sol.routes[k].customers;
-                for (std::size_t pos = 0; pos <= seq.size(); ++pos) {
+                for (size_t pos = 0; pos <= seq.size(); ++pos) {
                     const int prev = (pos == 0) ? 0 : seq[pos - 1];
                     const int next = (pos == seq.size()) ? 0 : seq[pos];
                     const double delta = inst.vehicles[k].variable_cost
@@ -199,7 +201,7 @@ Solution clarke_wright(const Instance& inst, double beta) {
                 continue;
             }
             auto& seq = sol.routes[best_k].customers;
-            seq.insert(seq.begin() + static_cast<std::ptrdiff_t>(best_pos), c);
+            seq.insert(seq.begin() + static_cast<ptrdiff_t>(best_pos), c);
             load[best_k] += d;
         }
     }
@@ -226,7 +228,7 @@ Solution clarke_wright(const Instance& inst, double beta) {
                     const double after  = route_cost(sol.routes[a].customers, b, inst, beta)
                                         + route_cost(sol.routes[b].customers, a, inst, beta);
                     if (after < before - 1e-9) {
-                        std::swap(sol.routes[a].customers, sol.routes[b].customers);
+                        swap(sol.routes[a].customers, sol.routes[b].customers);
                         improved = true;
                         break;
                     }

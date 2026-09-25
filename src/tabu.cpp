@@ -5,6 +5,8 @@
 #include <cmath>
 #include <limits>
 
+using namespace std;
+
 namespace hfvrp {
 
 namespace {
@@ -14,7 +16,7 @@ namespace {
 // inicial de Clarke-Wright ja viola capacidade.
 constexpr double CAPACITY_PENALTY = 1.0e4;
 
-double route_demand(const std::vector<int>& custs, const Instance& inst) {
+double route_demand(const vector<int>& custs, const Instance& inst) {
     double q = 0.0;
     for (int c : custs) q += inst.demand[c];
     return q;
@@ -70,7 +72,7 @@ double full_cost(const Solution& sol, const Instance& inst, double beta) {
 }
 
 struct TabuList {
-    std::vector<int> last_iter;   // per customer, last iteration it was moved
+    vector<int> last_iter;   // per customer, last iteration it was moved
     int tenure;
 
     TabuList(int N, int tenure_) : last_iter(N + 1, -1000000), tenure(tenure_) {}
@@ -81,18 +83,18 @@ struct TabuList {
 } // namespace
 
 Solution tabu_search(const Instance& inst, double beta,
-                     const TabuParams& params, std::uint64_t seed) {
+                     const TabuParams& params, uint64_t seed) {
     (void)seed;  // a busca e deterministica; a semente vem por uniformidade de interface
 
     Solution current = clarke_wright(inst, beta);
     Solution best    = current;
     const bool start_feasible = capacity_ok(best, inst);
     double best_cost = start_feasible ? full_cost(best, inst, beta)
-                                      : std::numeric_limits<double>::infinity();
+                                      : numeric_limits<double>::infinity();
 
     const int N = inst.num_customers;
     int tenure = params.tabu_tenure;
-    if (tenure <= 0) tenure = 7 + (int)std::floor(std::sqrt((double)N));
+    if (tenure <= 0) tenure = 7 + (int)floor(sqrt((double)N));
 
     TabuList tabu(N, tenure);
     Timer timer;
@@ -103,7 +105,7 @@ Solution tabu_search(const Instance& inst, double beta,
         if (no_improve >= params.max_iter_no_improve) break;
 
         struct Candidate {
-            double new_cost = std::numeric_limits<double>::infinity();
+            double new_cost = numeric_limits<double>::infinity();
             Solution sol;
             int moved_a = -1, moved_b = -1;
             bool is_tabu = false;
@@ -116,11 +118,11 @@ Solution tabu_search(const Instance& inst, double beta,
                              (b > 0 && tabu.is_tabu(b, iter));
             if (!tbu) {
                 if (c < best_cand.new_cost) {
-                    best_cand = {c, std::move(cand), a, b, false};
+                    best_cand = {c, move(cand), a, b, false};
                 }
             } else if (c < best_cost) {
                 if (c < best_aspir.new_cost) {
-                    best_aspir = {c, std::move(cand), a, b, true};
+                    best_aspir = {c, move(cand), a, b, true};
                 }
             }
         };
@@ -140,7 +142,7 @@ Solution tabu_search(const Instance& inst, double beta,
                         cand.routes[r1].customers.erase(cand.routes[r1].customers.begin() + i);
                         if (cand.routes[r2].vehicle_id < 0) cand.routes[r2].vehicle_id = r2;
                         cand.routes[r2].customers.insert(cand.routes[r2].customers.begin() + p, c);
-                        consider(std::move(cand), c, -1);
+                        consider(move(cand), c, -1);
                     }
                 }
             }
@@ -156,8 +158,8 @@ Solution tabu_search(const Instance& inst, double beta,
                 for (size_t i = 0; i < a.customers.size(); ++i)
                     for (size_t j = 0; j < b.customers.size(); ++j) {
                         Solution cand = current;
-                        std::swap(cand.routes[r1].customers[i], cand.routes[r2].customers[j]);
-                        consider(std::move(cand), a.customers[i], b.customers[j]);
+                        swap(cand.routes[r1].customers[i], cand.routes[r2].customers[j]);
+                        consider(move(cand), a.customers[i], b.customers[j]);
                     }
             }
         }
@@ -170,15 +172,15 @@ Solution tabu_search(const Instance& inst, double beta,
             for (int i = 0; i + 1 < sz; ++i)
                 for (int j = i + 1; j < sz; ++j) {
                     Solution cand = current;
-                    std::reverse(cand.routes[r].customers.begin() + i,
+                    reverse(cand.routes[r].customers.begin() + i,
                                  cand.routes[r].customers.begin() + j + 1);
-                    consider(std::move(cand), route.customers[i], route.customers[j]);
+                    consider(move(cand), route.customers[i], route.customers[j]);
                 }
         }
 
         // Troca de veiculo: passa uma rota para um veiculo ocioso.
         {
-            std::vector<bool> used(inst.num_vehicles, false);
+            vector<bool> used(inst.num_vehicles, false);
             for (const auto& r : current.routes)
                 if (!r.customers.empty() && r.vehicle_id >= 0) used[r.vehicle_id] = true;
 
@@ -198,18 +200,18 @@ Solution tabu_search(const Instance& inst, double beta,
                         cand.routes[k] = cand.routes[r];
                         cand.routes[r] = {};
                     }
-                    consider(std::move(cand), -1, -1);
+                    consider(move(cand), -1, -1);
                 }
             }
         }
 
         // Escolhe o movimento.
         Candidate* chosen = nullptr;
-        if (best_cand.new_cost < std::numeric_limits<double>::infinity()) chosen = &best_cand;
+        if (best_cand.new_cost < numeric_limits<double>::infinity()) chosen = &best_cand;
         if (best_aspir.new_cost < best_cand.new_cost) chosen = &best_aspir;
         if (!chosen) break;
 
-        current = std::move(chosen->sol);
+        current = move(chosen->sol);
         if (chosen->moved_a > 0) tabu.mark(chosen->moved_a, iter);
         if (chosen->moved_b > 0) tabu.mark(chosen->moved_b, iter);
 

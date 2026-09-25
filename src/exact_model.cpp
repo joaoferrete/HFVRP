@@ -11,6 +11,8 @@
 #include <OsiClpSolverInterface.hpp>
 #include <CbcModel.hpp>
 
+using namespace std;
+
 namespace hfvrp {
 
 namespace {
@@ -80,8 +82,8 @@ ExactResult solve_exact(const Instance& inst, double beta,
 
     // Colunas.
     const int ncols = L.total();
-    std::vector<double> col_lb(ncols, 0.0), col_ub(ncols, 1.0), obj(ncols, 0.0);
-    std::vector<char>   is_int(ncols, 1);
+    vector<double> col_lb(ncols, 0.0), col_ub(ncols, 1.0), obj(ncols, 0.0);
+    vector<char>   is_int(ncols, 1);
 
     // x_{i,j,k}: binaria, custo V_k * D_ij; a diagonal fica fixada em 0.
     for (int i = 0; i <= N; ++i)
@@ -110,10 +112,10 @@ ExactResult solve_exact(const Instance& inst, double beta,
     // Montagem da matriz, linha a linha.
     CoinPackedMatrix mat(false, 0, 0);
     mat.setDimensions(0, ncols);
-    std::vector<double> row_lb, row_ub;
+    vector<double> row_lb, row_ub;
 
-    auto add_row = [&](const std::vector<int>& idx,
-                       const std::vector<double>& coef,
+    auto add_row = [&](const vector<int>& idx,
+                       const vector<double>& coef,
                        double lb, double ub) {
         CoinPackedVector r((int)idx.size(), idx.data(), coef.data());
         mat.appendRow(r);
@@ -125,7 +127,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
 
     // (1) Cada cliente e atendido por exatamente um veiculo.
     for (int i = 1; i <= N; ++i) {
-        std::vector<int> idx; std::vector<double> coef;
+        vector<int> idx; vector<double> coef;
         for (int k = 0; k < M; ++k) { idx.push_back(L.z(i, k)); coef.push_back(1.0); }
         add_row(idx, coef, 1.0, 1.0);
     }
@@ -133,7 +135,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
     // (2) Liga os arcos de saida a atribuicao.
     for (int i = 1; i <= N; ++i)
         for (int k = 0; k < M; ++k) {
-            std::vector<int> idx; std::vector<double> coef;
+            vector<int> idx; vector<double> coef;
             for (int j = 0; j <= N; ++j) if (j != i) {
                 idx.push_back(L.x(i, j, k)); coef.push_back(1.0);
             }
@@ -144,7 +146,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
     // (3) Liga os arcos de chegada a atribuicao.
     for (int j = 1; j <= N; ++j)
         for (int k = 0; k < M; ++k) {
-            std::vector<int> idx; std::vector<double> coef;
+            vector<int> idx; vector<double> coef;
             for (int i = 0; i <= N; ++i) if (i != j) {
                 idx.push_back(L.x(i, j, k)); coef.push_back(1.0);
             }
@@ -154,7 +156,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
 
     // (4) O veiculo deixa o deposito se e somente se for utilizado.
     for (int k = 0; k < M; ++k) {
-        std::vector<int> idx; std::vector<double> coef;
+        vector<int> idx; vector<double> coef;
         for (int j = 1; j <= N; ++j) { idx.push_back(L.x(0, j, k)); coef.push_back(1.0); }
         idx.push_back(L.y(k)); coef.push_back(-1.0);
         add_row(idx, coef, 0.0, 0.0);
@@ -162,7 +164,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
 
     // (5) E retorna ao deposito nas mesmas condicoes.
     for (int k = 0; k < M; ++k) {
-        std::vector<int> idx; std::vector<double> coef;
+        vector<int> idx; vector<double> coef;
         for (int i = 1; i <= N; ++i) { idx.push_back(L.x(i, 0, k)); coef.push_back(1.0); }
         idx.push_back(L.y(k)); coef.push_back(-1.0);
         add_row(idx, coef, 0.0, 0.0);
@@ -170,7 +172,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
 
     // (6) Capacidade do veiculo.
     for (int k = 0; k < M; ++k) {
-        std::vector<int> idx; std::vector<double> coef;
+        vector<int> idx; vector<double> coef;
         for (int i = 1; i <= N; ++i) {
             idx.push_back(L.z(i, k)); coef.push_back(inst.demand[i]);
         }
@@ -184,7 +186,7 @@ ExactResult solve_exact(const Instance& inst, double beta,
     for (int i = 0; i <= N; ++i)
         for (int j = 1; j <= N; ++j) {
             if (i == j) continue;
-            std::vector<int> idx; std::vector<double> coef;
+            vector<int> idx; vector<double> coef;
             idx.push_back(L.t(j)); coef.push_back(1.0);
             if (i != 0) { idx.push_back(L.t(i)); coef.push_back(-1.0); }
             for (int k = 0; k < M; ++k) {
@@ -232,8 +234,8 @@ ExactResult solve_exact(const Instance& inst, double beta,
         res.objective = cbc.getObjValue();
         res.solution  = extract_solution(primal, L, inst);
         evaluate(res.solution, inst, beta);
-        const double denom = std::max(1e-10, std::abs(res.objective));
-        res.gap = std::max(0.0, (res.objective - res.lower_bound) / denom);
+        const double denom = max(1e-10, abs(res.objective));
+        res.gap = max(0.0, (res.objective - res.lower_bound) / denom);
         if (res.gap > 1.0) res.gap = 1.0;
     } else {
         res.gap = 1.0;

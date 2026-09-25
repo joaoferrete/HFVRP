@@ -7,6 +7,8 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace std;
+
 namespace hfvrp {
 
 namespace {
@@ -20,19 +22,19 @@ const char* kVehicleColors[] = {
 constexpr int kNumColors = sizeof(kVehicleColors) / sizeof(kVehicleColors[0]);
 
 // Converte a prioridade em uma cor, do cinza claro ao vermelho.
-std::string priority_fill(double p, double max_p) {
+string priority_fill(double p, double max_p) {
     if (max_p < 1e-9 || p < 1e-9) return "#eeeeee";
-    const double t = std::min(1.0, p / max_p);
-    const int r = 238 + (int)std::round((215 - 238) * t); //  238 -> 215
-    const int g = 238 + (int)std::round(( 48 - 238) * t); //  238 -> 48
-    const int b = 238 + (int)std::round(( 39 - 238) * t); //  238 -> 39
+    const double t = min(1.0, p / max_p);
+    const int r = 238 + (int)round((215 - 238) * t); //  238 -> 215
+    const int g = 238 + (int)round(( 48 - 238) * t); //  238 -> 48
+    const int b = 238 + (int)round(( 39 - 238) * t); //  238 -> 39
     char buf[8];
-    std::snprintf(buf, sizeof(buf), "#%02x%02x%02x", r, g, b);
+    snprintf(buf, sizeof(buf), "#%02x%02x%02x", r, g, b);
     return buf;
 }
 
-std::string xml_escape(const std::string& s) {
-    std::string out;
+string xml_escape(const string& s) {
+    string out;
     out.reserve(s.size());
     for (char c : s) {
         switch (c) {
@@ -46,9 +48,9 @@ std::string xml_escape(const std::string& s) {
     return out;
 }
 
-std::string fmt_num(double v, int prec = 2) {
-    std::ostringstream os;
-    os << std::fixed << std::setprecision(prec) << v;
+string fmt_num(double v, int prec = 2) {
+    ostringstream os;
+    os << fixed << setprecision(prec) << v;
     return os.str();
 }
 
@@ -57,11 +59,11 @@ std::string fmt_num(double v, int prec = 2) {
 void write_svg(const Instance& inst,
                const Solution& sol,
                double beta,
-               const std::string& method,
-               const std::string& path,
+               const string& method,
+               const string& path,
                const VisualExtras& extras) {
-    std::ofstream out(path);
-    if (!out) throw std::runtime_error("cannot write SVG to " + path);
+    ofstream out(path);
+    if (!out) throw runtime_error("cannot write SVG to " + path);
 
     // Geometria do desenho.
     constexpr int W       = 1100;
@@ -79,13 +81,13 @@ void write_svg(const Instance& inst,
     double xmin = inst.coord_x[0], xmax = inst.coord_x[0];
     double ymin = inst.coord_y[0], ymax = inst.coord_y[0];
     for (int i = 0; i <= inst.num_customers; ++i) {
-        xmin = std::min(xmin, inst.coord_x[i]);
-        xmax = std::max(xmax, inst.coord_x[i]);
-        ymin = std::min(ymin, inst.coord_y[i]);
-        ymax = std::max(ymax, inst.coord_y[i]);
+        xmin = min(xmin, inst.coord_x[i]);
+        xmax = max(xmax, inst.coord_x[i]);
+        ymin = min(ymin, inst.coord_y[i]);
+        ymax = max(ymax, inst.coord_y[i]);
     }
-    const double xrange = std::max(1.0, xmax - xmin) * 1.05;
-    const double yrange = std::max(1.0, ymax - ymin) * 1.05;
+    const double xrange = max(1.0, xmax - xmin) * 1.05;
+    const double yrange = max(1.0, ymax - ymin) * 1.05;
     const double xc = 0.5 * (xmin + xmax);
     const double yc = 0.5 * (ymin + ymax);
 
@@ -100,16 +102,16 @@ void write_svg(const Instance& inst,
     // Prioridade maxima, usada na escala de cor.
     double max_p = 0.0;
     for (int i = 1; i <= inst.num_customers; ++i)
-        max_p = std::max(max_p, inst.priority[i]);
+        max_p = max(max_p, inst.priority[i]);
 
     // Demanda maxima, usada na escala de raio.
     double max_d = 1.0;
     for (int i = 1; i <= inst.num_customers; ++i)
-        max_d = std::max(max_d, inst.demand[i]);
+        max_d = max(max_d, inst.demand[i]);
 
     // Estatisticas de uso da frota.
     int vehicles_used = 0;
-    std::vector<int> idle_vehicle_ids;    // 0-based indices
+    vector<int> idle_vehicle_ids;    // 0-based indices
     double total_load = 0.0;
     double total_capacity_used = 0.0;     // capacities of used vehicles only
     for (const auto& r : sol.routes) {
@@ -133,7 +135,7 @@ void write_svg(const Instance& inst,
                                 ? (100.0 * total_load / total_capacity_used)
                                 : 0.0;
 
-    out << std::fixed << std::setprecision(2);
+    out << fixed << setprecision(2);
     out << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     out << "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 " << W << " " << H
         << "\" font-family=\"Helvetica,Arial,sans-serif\" font-size=\"12\">\n";
@@ -153,7 +155,7 @@ void write_svg(const Instance& inst,
     out << "</defs>\n";
 
     // Cabecalho.
-    std::ostringstream header;
+    ostringstream header;
     header << "HFVRP-P — " << inst.name
            << "  |  method=" << method
            << "  |  β=" << beta
@@ -225,35 +227,35 @@ void write_svg(const Instance& inst,
         << "\" font-weight=\"600\">Summary</text>\n";
     row_y += 18;
 
-    auto put_line = [&](const std::string& s) {
+    auto put_line = [&](const string& s) {
         out << "<text x=\"" << sb_x << "\" y=\"" << row_y << "\">"
             << xml_escape(s) << "</text>\n";
         row_y += 16;
     };
-    auto put_line_muted = [&](const std::string& s) {
+    auto put_line_muted = [&](const string& s) {
         out << "<text x=\"" << sb_x << "\" y=\"" << row_y << "\" fill=\"#555\">"
             << xml_escape(s) << "</text>\n";
         row_y += 16;
     };
 
     {
-        std::ostringstream s;
+        ostringstream s;
         s << "runtime = " << fmt_num(extras.runtime_sec, 3) << " s";
         put_line(s.str());
     }
     {
-        std::ostringstream s;
+        ostringstream s;
         s << "vehicles used = " << vehicles_used << " / " << inst.num_vehicles
           << "  (" << fmt_num(fleet_util, 1) << "%)";
         put_line(s.str());
     }
     {
-        std::ostringstream s;
+        ostringstream s;
         s << "vehicles idle = " << vehicles_idle;
         put_line(s.str());
     }
     if (!idle_vehicle_ids.empty()) {
-        std::ostringstream s;
+        ostringstream s;
         s << "  idle IDs: ";
         for (size_t i = 0; i < idle_vehicle_ids.size(); ++i) {
             if (i) s << ", ";
@@ -262,12 +264,12 @@ void write_svg(const Instance& inst,
         put_line_muted(s.str());
     }
     {
-        std::ostringstream s;
+        ostringstream s;
         s << "total demand served = " << fmt_num(total_load, 0);
         put_line(s.str());
     }
     if (total_capacity_used > 0.0) {
-        std::ostringstream s;
+        ostringstream s;
         s << "capacity utilisation = " << fmt_num(cap_util, 1) << "%"
           << "  (" << fmt_num(total_load, 0) << " / "
           << fmt_num(total_capacity_used, 0) << ")";
@@ -287,34 +289,34 @@ void write_svg(const Instance& inst,
         row_y += 18;
 
         {
-            std::ostringstream s;
+            ostringstream s;
             s << "status = " << extras.status
               << (extras.optimal ? "  (proven optimal)" : "");
             put_line(s.str());
         }
         if (sol.feasible) {
-            std::ostringstream s;
+            ostringstream s;
             s << "UB (incumbent) = " << fmt_num(sol.cost_total, 2);
             put_line(s.str());
         }
         {
-            std::ostringstream s;
+            ostringstream s;
             s << "LB (best bound) = " << fmt_num(extras.lower_bound, 2);
             put_line(s.str());
         }
         {
-            std::ostringstream s;
+            ostringstream s;
             s << "root LP bound = " << fmt_num(extras.root_lp_bound, 2);
             put_line(s.str());
         }
         {
-            std::ostringstream s;
+            ostringstream s;
             if (!sol.feasible) s << "gap = n/a (no incumbent)";
             else               s << "gap = " << fmt_num(100.0 * extras.gap, 2) << " %";
             put_line(s.str());
         }
         {
-            std::ostringstream s;
+            ostringstream s;
             s << "B&B nodes = " << extras.num_nodes;
             put_line(s.str());
         }
@@ -336,7 +338,7 @@ void write_svg(const Instance& inst,
         out << "<rect x=\"" << sb_x << "\" y=\"" << (row_y - 10)
             << "\" width=\"14\" height=\"14\" fill=\"" << col << "\"/>\n";
 
-        std::ostringstream info;
+        ostringstream info;
         info << "V" << (r.vehicle_id + 1)
              << "  Q=" << veh.capacity
              << "  load=" << load
@@ -346,7 +348,7 @@ void write_svg(const Instance& inst,
             << "\">" << xml_escape(info.str()) << "</text>\n";
         row_y += 18;
 
-        std::ostringstream seq;
+        ostringstream seq;
         seq << "0→";
         for (int c : r.customers) seq << c << "→";
         seq << "0";
@@ -375,7 +377,7 @@ void write_svg(const Instance& inst,
     }
 
     // Rodape: decomposicao do custo e legenda.
-    std::ostringstream footer;
+    ostringstream footer;
     footer << "cost_operational = " << sol.cost_operational
            << "   |   cost_priority = " << sol.cost_priority
            << "   |   cost_total = " << sol.cost_total;
@@ -384,7 +386,7 @@ void write_svg(const Instance& inst,
         << xml_escape(footer.str()) << "</text>\n";
 
     if (extras.exact && sol.feasible && !extras.optimal) {
-        std::ostringstream f2;
+        ostringstream f2;
         f2 << "Solver stopped before proving optimality — LB = "
            << fmt_num(extras.lower_bound, 2)
            << ", gap = " << fmt_num(100.0 * extras.gap, 2) << " %.";
@@ -392,7 +394,7 @@ void write_svg(const Instance& inst,
             << "\" fill=\"#b22222\">" << xml_escape(f2.str()) << "</text>\n";
     }
 
-    std::ostringstream caption;
+    ostringstream caption;
     caption << "Circle size ∝ demand.  Circle colour ∝ priority "
             << "(gray = 0, red = max).  Dashed arc returns to depot.";
     out << "<text x=\"" << MARGIN << "\" y=\"" << (H - FOOTER + 78)

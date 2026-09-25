@@ -5,6 +5,8 @@
 #include <sstream>
 #include <set>
 
+using namespace std;
+
 namespace hfvrp {
 
 void evaluate(Solution& sol, const Instance& inst, double beta) {
@@ -12,7 +14,7 @@ void evaluate(Solution& sol, const Instance& inst, double beta) {
     sol.cost_priority    = 0.0;
     sol.feasible = true;
 
-    std::set<int> served;
+    set<int> served;
 
     for (auto& r : sol.routes) {
         if (r.customers.empty() || r.vehicle_id < 0) continue;
@@ -40,8 +42,8 @@ void evaluate(Solution& sol, const Instance& inst, double beta) {
     sol.cost_total = sol.cost_operational + beta * sol.cost_priority;
 }
 
-std::string validate(const Solution& sol, const Instance& inst) {
-    std::set<int> served;
+string validate(const Solution& sol, const Instance& inst) {
+    set<int> served;
     for (const auto& r : sol.routes) {
         if (r.customers.empty()) continue;
         if (r.vehicle_id < 0 || r.vehicle_id >= inst.num_vehicles)
@@ -49,21 +51,21 @@ std::string validate(const Solution& sol, const Instance& inst) {
         double load = 0.0;
         for (int c : r.customers) {
             if (c < 1 || c > inst.num_customers) return "customer index out of range";
-            if (served.count(c)) return "customer served more than once: " + std::to_string(c);
+            if (served.count(c)) return "customer served more than once: " + to_string(c);
             served.insert(c);
             load += inst.demand[c];
         }
         if (load > inst.vehicles[r.vehicle_id].capacity + 1e-9)
-            return "capacity exceeded on vehicle " + std::to_string(r.vehicle_id);
+            return "capacity exceeded on vehicle " + to_string(r.vehicle_id);
     }
     for (int i = 1; i <= inst.num_customers; ++i)
-        if (!served.count(i)) return "customer not served: " + std::to_string(i);
+        if (!served.count(i)) return "customer not served: " + to_string(i);
     return "";
 }
 
 void print_solution(const Solution& sol, const Instance& inst, double beta) {
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << "Solution for " << inst.name
+    cout << fixed << setprecision(3);
+    cout << "Solution for " << inst.name
               << " (N=" << inst.num_customers
               << ", M=" << inst.num_vehicles
               << ", beta=" << beta << ")\n";
@@ -75,7 +77,7 @@ void print_solution(const Solution& sol, const Instance& inst, double beta) {
         const auto& veh = inst.vehicles[r.vehicle_id];
         double load = 0.0, arrival = 0.0;
         int prev = 0;
-        std::ostringstream seq;
+        ostringstream seq;
         seq << "0";
         for (int c : r.customers) {
             arrival += inst.distance[prev][c];
@@ -86,17 +88,17 @@ void print_solution(const Solution& sol, const Instance& inst, double beta) {
         arrival += inst.distance[prev][0];
         seq << " -> 0";
 
-        std::cout << "  Route " << rid
+        cout << "  Route " << rid
                   << " [vehicle " << (r.vehicle_id + 1)
                   << ", Q=" << veh.capacity
                   << ", load=" << load
                   << ", dist=" << arrival << "]: "
                   << seq.str() << '\n';
     }
-    std::cout << "  cost_operational = " << sol.cost_operational << '\n';
-    std::cout << "  cost_priority    = " << sol.cost_priority << '\n';
-    std::cout << "  cost_total       = " << sol.cost_total << '\n';
-    std::cout << "  feasible         = " << (sol.feasible ? "yes" : "no") << '\n';
+    cout << "  cost_operational = " << sol.cost_operational << '\n';
+    cout << "  cost_priority    = " << sol.cost_priority << '\n';
+    cout << "  cost_total       = " << sol.cost_total << '\n';
+    cout << "  feasible         = " << (sol.feasible ? "yes" : "no") << '\n';
 }
 
 } // namespace hfvrp

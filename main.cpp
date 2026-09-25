@@ -15,16 +15,18 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
+
 using namespace hfvrp;
 
 namespace {
 
 struct Args {
-    std::string method;
-    std::string instance_path;
-    std::string output_csv;
-    std::string visual_path;    // empty => disabled; "auto" => default under results/
-    std::uint64_t seed = 42;
+    string method;
+    string instance_path;
+    string output_csv;
+    string visual_path;    // empty => disabled; "auto" => default under results/
+    uint64_t seed = 42;
     bool seed_is_auto = false;   // true when user passed --seed null|random|rand|auto
     double beta = 1.0;
     double time_limit = 60.0;
@@ -43,11 +45,11 @@ struct Args {
 
     // Rotulo livre, gravado na coluna "variant" do CSV. Permite distinguir
     // varias configuracoes do mesmo metodo numa unica bateria.
-    std::string variant;
+    string variant;
 };
 
 void usage() {
-    std::cout <<
+    cout <<
         "Uso:\n"
         "  hfvrp --method {exact|savings|tabu|ga} --instance CAMINHO [opcoes]\n"
         "Obrigatorias:\n"
@@ -85,32 +87,32 @@ void usage() {
 
 bool parse_args(int argc, char** argv, Args& a) {
     for (int i = 1; i < argc; ++i) {
-        std::string k = argv[i];
+        string k = argv[i];
         auto peek = [&]() -> const char* {
             return (i + 1 < argc) ? argv[i + 1] : nullptr;
         };
-        auto next = [&]() -> std::string {
-            if (i + 1 >= argc) throw std::runtime_error("missing value for " + k);
+        auto next = [&]() -> string {
+            if (i + 1 >= argc) throw runtime_error("missing value for " + k);
             return argv[++i];
         };
         if (k == "--method")       a.method = next();
         else if (k == "--instance")a.instance_path = next();
         else if (k == "--seed") {
-            std::string v = next();
-            std::string lv = v;
-            for (auto& c : lv) c = (char)std::tolower((unsigned char)c);
+            string v = next();
+            string lv = v;
+            for (auto& c : lv) c = (char)tolower((unsigned char)c);
             if (lv == "null" || lv == "random" || lv == "rand" || lv == "auto") {
                 a.seed_is_auto = true;   // resolved right before dispatch
             } else {
-                a.seed = std::stoull(v);
+                a.seed = stoull(v);
                 a.seed_is_auto = false;
             }
         }
-        else if (k == "--beta")    a.beta = std::stod(next());
-        else if (k == "--time-limit") a.time_limit = std::stod(next());
-        else if (k == "--node-limit") a.node_limit = std::stol(next());
-        else if (k == "--threads")    a.threads    = std::stoi(next());
-        else if (k == "--mem-limit")  a.mem_limit_mb = std::stod(next());
+        else if (k == "--beta")    a.beta = stod(next());
+        else if (k == "--time-limit") a.time_limit = stod(next());
+        else if (k == "--node-limit") a.node_limit = stol(next());
+        else if (k == "--threads")    a.threads    = stoi(next());
+        else if (k == "--mem-limit")  a.mem_limit_mb = stod(next());
         else if (k == "--output")  a.output_csv = next();
         else if (k == "--visual") {
             // Aceita um caminho se o argumento seguinte nao for outra opcao.
@@ -118,21 +120,21 @@ bool parse_args(int argc, char** argv, Args& a) {
             if (p && p[0] != '-') a.visual_path = next();
             else                  a.visual_path = "auto";
         }
-        else if (k == "--ga-population")  a.ga_population  = std::stoi(next());
-        else if (k == "--ga-generations") a.ga_generations = std::stoi(next());
-        else if (k == "--ga-mutation")    a.ga_mutation    = std::stod(next());
-        else if (k == "--ga-tournament")  a.ga_tournament  = std::stoi(next());
-        else if (k == "--ga-elitism")     a.ga_elitism     = std::stod(next());
+        else if (k == "--ga-population")  a.ga_population  = stoi(next());
+        else if (k == "--ga-generations") a.ga_generations = stoi(next());
+        else if (k == "--ga-mutation")    a.ga_mutation    = stod(next());
+        else if (k == "--ga-tournament")  a.ga_tournament  = stoi(next());
+        else if (k == "--ga-elitism")     a.ga_elitism     = stod(next());
         else if (k == "--variant")        a.variant        = next();
         else if (k == "--verbose" || k == "-v") a.verbose = true;
         else if (k == "--quiet"   || k == "-q") a.quiet = true;
         else if (k == "--help" || k == "-h") { usage(); return false; }
-        else throw std::runtime_error("unknown arg: " + k);
+        else throw runtime_error("unknown arg: " + k);
     }
     return !a.method.empty() && !a.instance_path.empty();
 }
 
-std::string default_visual_path(const Args& a, const std::string& instance_name) {
+string default_visual_path(const Args& a, const string& instance_name) {
     return "results/" + instance_name + "_" + a.method + ".svg";
 }
 
@@ -144,33 +146,33 @@ struct ExactExtras {
     long   num_nodes      = 0;
     long   num_iterations = 0;
     int    num_solutions  = 0;
-    std::string status;   // "" when not an exact run
+    string status;   // "" when not an exact run
 };
 
-void append_csv(const std::string& path, const std::string& method,
+void append_csv(const string& path, const string& method,
                 const Instance& inst, const Solution& sol, double beta,
                 double runtime, double lower_bound, bool optimal,
-                std::uint64_t seed, const ExactExtras& ex,
-                const std::string& variant) {
+                uint64_t seed, const ExactExtras& ex,
+                const string& variant) {
     // Escreve o cabecalho quando o arquivo ainda nao existe, esta vazio ou
     // contem apenas espacos.
     bool needs_header = true;
     {
-        std::ifstream probe(path);
+        ifstream probe(path);
         if (probe.good()) {
-            probe.seekg(0, std::ios::end);
+            probe.seekg(0, ios::end);
             needs_header = (probe.tellg() <= 0);
         }
     }
-    std::ofstream out(path, std::ios::app);
-    if (!out) throw std::runtime_error("cannot write CSV: " + path);
+    ofstream out(path, ios::app);
+    if (!out) throw runtime_error("cannot write CSV: " + path);
     if (needs_header) {
         out << "method,instance,N,M,beta,seed,cost_operational,cost_priority,"
                "cost_total,lower_bound,root_lp_bound,gap,optimal,feasible,"
                "status,num_nodes,num_iterations,num_solutions,runtime_sec,"
                "variant\n";
     }
-    out << std::fixed << std::setprecision(6);
+    out << fixed << setprecision(6);
     out << method << ',' << inst.name << ',' << inst.num_customers << ','
         << inst.num_vehicles << ',' << beta << ',' << seed << ','
         << sol.cost_operational << ',' << sol.cost_priority << ','
@@ -193,7 +195,7 @@ int main(int argc, char** argv) try {
     Instance inst = load_instance(a.instance_path);
     if (a.seed_is_auto) {
         a.seed = auto_seed();
-        if (!a.quiet) std::cerr << "seed (auto) = " << a.seed << '\n';
+        if (!a.quiet) cerr << "seed (auto) = " << a.seed << '\n';
     }
     Solution sol;
     double runtime = 0.0, lower_bound = 0.0;
@@ -233,19 +235,19 @@ int main(int argc, char** argv) try {
         sol = genetic_algorithm(inst, a.beta, p, a.seed);
         runtime = t.seconds();
     } else {
-        std::cerr << "unknown method: " << a.method << "\n";
+        cerr << "unknown method: " << a.method << "\n";
         return 1;
     }
 
     if (!a.quiet) {
-        std::cout << std::fixed << std::setprecision(3)
+        cout << fixed << setprecision(3)
                   << "method=" << a.method
                   << " instance=" << inst.name
                   << " cost_total=" << sol.cost_total
                   << " runtime_sec=" << runtime
                   << " feasible=" << (sol.feasible ? "yes" : "no")
                   << (a.method == "exact" ?
-                       (" lower_bound=" + std::to_string(lower_bound) +
+                       (" lower_bound=" + to_string(lower_bound) +
                         (optimal ? " optimal" : " time_limit"))
                        : "")
                   << '\n';
@@ -255,7 +257,7 @@ int main(int argc, char** argv) try {
         append_csv(a.output_csv, a.method, inst, sol, a.beta,
                    runtime, lower_bound, optimal, a.seed, ex, a.variant);
     if (!a.visual_path.empty()) {
-        const std::string vp = (a.visual_path == "auto")
+        const string vp = (a.visual_path == "auto")
                                    ? default_visual_path(a, inst.name)
                                    : a.visual_path;
         VisualExtras vex;
@@ -270,10 +272,10 @@ int main(int argc, char** argv) try {
             vex.optimal       = optimal;
         }
         write_svg(inst, sol, a.beta, a.method, vp, vex);
-        std::cerr << "visual SVG: " << vp << "\n";
+        cerr << "visual SVG: " << vp << "\n";
     }
     return sol.feasible ? 0 : 2;
-} catch (std::exception& e) {
-    std::cerr << "error: " << e.what() << '\n';
+} catch (exception& e) {
+    cerr << "error: " << e.what() << '\n';
     return 3;
 }

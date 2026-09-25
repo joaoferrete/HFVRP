@@ -7,6 +7,8 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace std;
+
 namespace hfvrp {
 
 double Instance::distance_bound() const {
@@ -35,52 +37,52 @@ namespace {
 
 void compute_distances(Instance& inst) {
     const int n = inst.num_customers;
-    inst.distance.assign(n + 1, std::vector<double>(n + 1, 0.0));
+    inst.distance.assign(n + 1, vector<double>(n + 1, 0.0));
     for (int i = 0; i <= n; ++i) {
         for (int j = 0; j <= n; ++j) {
             if (i == j) continue;
             const double dx = inst.coord_x[i] - inst.coord_x[j];
             const double dy = inst.coord_y[i] - inst.coord_y[j];
-            inst.distance[i][j] = std::sqrt(dx * dx + dy * dy);
+            inst.distance[i][j] = sqrt(dx * dx + dy * dy);
         }
     }
 }
 
-std::string trim(const std::string& s) {
+string trim(const string& s) {
     const auto a = s.find_first_not_of(" \t\r\n");
-    if (a == std::string::npos) return "";
+    if (a == string::npos) return "";
     const auto b = s.find_last_not_of(" \t\r\n");
     return s.substr(a, b - a + 1);
 }
 
 } // namespace
 
-Instance load_instance(const std::string& path) {
-    std::ifstream in(path);
-    if (!in) throw std::runtime_error("Cannot open instance file: " + path);
+Instance load_instance(const string& path) {
+    ifstream in(path);
+    if (!in) throw runtime_error("Cannot open instance file: " + path);
 
     Instance inst;
-    std::string line, section;
+    string line, section;
     bool have_n = false, have_m = false;
 
-    while (std::getline(in, line)) {
-        const std::string t = trim(line);
+    while (getline(in, line)) {
+        const string t = trim(line);
         if (t.empty() || t[0] == '#') continue;
 
         const auto colon = t.find(':');
-        if (colon != std::string::npos &&
-            t.substr(0, colon).find(' ') == std::string::npos) {
-            const std::string key = trim(t.substr(0, colon));
-            const std::string val = trim(t.substr(colon + 1));
+        if (colon != string::npos &&
+            t.substr(0, colon).find(' ') == string::npos) {
+            const string key = trim(t.substr(0, colon));
+            const string val = trim(t.substr(colon + 1));
             if (key == "NAME") {
                 inst.name = val;
             } else if (key == "CUSTOMERS" || key == "DIMENSION") {
                 // DIMENSION conta o deposito; CUSTOMERS ja e o N.
-                int v = std::stoi(val);
+                int v = stoi(val);
                 inst.num_customers = (key == "DIMENSION") ? v - 1 : v;
                 have_n = true;
             } else if (key == "VEHICLES") {
-                inst.num_vehicles = std::stoi(val);
+                inst.num_vehicles = stoi(val);
                 have_m = true;
             }
             continue;
@@ -90,7 +92,7 @@ Instance load_instance(const std::string& path) {
             t == "PRIORITY_SECTION" || t == "VEHICLE_SECTION" || t == "EOF") {
             section = t;
             if (section == "NODE_COORD_SECTION") {
-                if (!have_n) throw std::runtime_error("CUSTOMERS/DIMENSION missing before coords");
+                if (!have_n) throw runtime_error("CUSTOMERS/DIMENSION missing before coords");
                 inst.coord_x.assign(inst.num_customers + 1, 0.0);
                 inst.coord_y.assign(inst.num_customers + 1, 0.0);
             } else if (section == "DEMAND_SECTION") {
@@ -98,13 +100,13 @@ Instance load_instance(const std::string& path) {
             } else if (section == "PRIORITY_SECTION") {
                 inst.priority.assign(inst.num_customers + 1, 0.0);
             } else if (section == "VEHICLE_SECTION") {
-                if (!have_m) throw std::runtime_error("VEHICLES missing before vehicle section");
+                if (!have_m) throw runtime_error("VEHICLES missing before vehicle section");
                 inst.vehicles.assign(inst.num_vehicles, {});
             }
             continue;
         }
 
-        std::istringstream iss(t);
+        istringstream iss(t);
         if (section == "NODE_COORD_SECTION") {
             int id; double x, y; iss >> id >> x >> y;
             inst.coord_x[id] = x; inst.coord_y[id] = y;
@@ -128,10 +130,10 @@ Instance load_instance(const std::string& path) {
     return inst;
 }
 
-void save_instance(const Instance& inst, const std::string& path) {
-    std::ofstream out(path);
-    if (!out) throw std::runtime_error("Cannot write instance file: " + path);
-    out << std::fixed << std::setprecision(6);
+void save_instance(const Instance& inst, const string& path) {
+    ofstream out(path);
+    if (!out) throw runtime_error("Cannot write instance file: " + path);
+    out << fixed << setprecision(6);
     out << "NAME: " << inst.name << '\n';
     out << "CUSTOMERS: " << inst.num_customers << '\n';
     out << "VEHICLES: " << inst.num_vehicles << '\n';

@@ -12,13 +12,15 @@
 #include <iostream>
 #include <vector>
 
-// O Concert exige IL_STD para usar os iostreams de std::. O Makefile ja
+// O Concert exige IL_STD para usar os iostreams de . O Makefile ja
 // define o simbolo; a guarda abaixo permite compilar o arquivo isoladamente
 // sem aviso de redefinicao.
 #ifndef IL_STD
 #define IL_STD
 #endif
 #include <ilcplex/ilocplex.h>
+
+using namespace std;
 
 namespace hfvrp {
 
@@ -227,8 +229,8 @@ ExactResult solve_exact(const Instance& inst, double beta,
             }
             res.solution = sol;
             evaluate(res.solution, inst, beta);
-            const double denom = std::max(1e-10, std::abs(res.objective));
-            res.gap = std::max(0.0, (res.objective - res.lower_bound) / denom);
+            const double denom = max(1e-10, abs(res.objective));
+            res.gap = max(0.0, (res.objective - res.lower_bound) / denom);
             if (res.gap > 1.0) res.gap = 1.0;
         } else {
             res.gap = 1.0;
@@ -249,11 +251,11 @@ ExactResult solve_exact(const Instance& inst, double beta,
         else                                                    res.status = "unknown";
 
     } catch (IloException& ex) {
-        std::cerr << "CPLEX exception: " << ex.getMessage() << std::endl;
+        cerr << "CPLEX exception: " << ex.getMessage() << endl;
         res.status = "abandoned";
         res.gap    = 1.0;
-    } catch (std::exception& ex) {
-        std::cerr << "exception: " << ex.what() << std::endl;
+    } catch (exception& ex) {
+        cerr << "exception: " << ex.what() << endl;
         res.status = "abandoned";
         res.gap    = 1.0;
     }
