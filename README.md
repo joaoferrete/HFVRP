@@ -122,18 +122,46 @@ make compare  INSTANCE=instances/custom/hfvrp_n010_m03_s01.vrp BETA=1
 make help     # lista todos os alvos e variáveis
 ```
 
-`./hfvrp` sem argumentos imprime todas as opções. As principais:
+`./hfvrp` sem argumentos imprime a mesma lista abaixo.
 
-| Opção | Efeito |
+**Obrigatórias**
+
+| Argumento | Efeito |
 |---|---|
-| `--method` | `exact`, `savings`, `tabu` ou `ga` |
-| `--beta F` | peso da prioridade |
-| `--time-limit S` | limite de tempo por execução |
-| `--seed N` | semente; `null` sorteia pelo relógio |
-| `--output CSV` | acrescenta uma linha ao arquivo indicado |
-| `--visual` | desenha as rotas em SVG |
-| `--verbose` | imprime as rotas |
-| `--variant NOME` | rótulo para distinguir configurações no CSV |
+| `--method M` | método de solução: `exact`, `savings`, `tabu` ou `ga` |
+| `--instance CAMINHO` | arquivo `.vrp` da instância a resolver |
+
+**Gerais**
+
+| Argumento | Padrão | Efeito |
+|---|---|---|
+| `-h`, `--help` | | mostra a ajuda e encerra |
+| `--beta F` | `1.0` | peso da prioridade; `0` recupera o HFVRP sem prioridade |
+| `--seed N` | `42` | semente das meta-heurísticas. `null`, `random`, `rand` ou `auto` sorteiam pelo relógio; o valor resolvido é impresso e gravado no CSV |
+| `--time-limit S` | `60` | limite de tempo por execução, em segundos |
+| `--output CSV` | | acrescenta uma linha ao arquivo indicado |
+| `--visual [CAMINHO]` | | desenha as rotas em SVG; sem caminho, grava em `output/<instância>_<método>.svg` |
+| `--verbose` | | imprime as rotas |
+| `--quiet` | | omite a linha de resumo `method=...` |
+| `--variant NOME` | | rótulo gravado na coluna `variant` do CSV, para distinguir configurações de um mesmo método |
+
+**Apenas do modelo exato**
+
+| Argumento | Padrão | Efeito |
+|---|---|---|
+| `--node-limit N` | `0` | teto de nós de branch-and-bound; `0` desativa. Serve como aproximação de limite de memória, já que os nós abertos dominam a RAM |
+| `--threads N` | `0` | threads do resolvedor; `0` usa o padrão, em geral todos os núcleos |
+| `--mem-limit MB` | `0` | teto de memória; `0` desativa. Respeitado pelo CPLEX e ignorado pelo CBC, que aceita apenas `--node-limit` |
+
+**Apenas do algoritmo genético**
+
+| Argumento | Padrão | Efeito |
+|---|---|---|
+| `--ga-population N` | `80` | tamanho da população |
+| `--ga-generations N` | `300` | número máximo de gerações |
+| `--ga-mutation F` | `0.10` | taxa de mutação, aplicada por filho e não por gene |
+| `--ga-tournament N` | `3` | tamanho do torneio de seleção |
+| `--ga-elitism F` | `0.10` | fração da população preservada sem alteração |
 
 ## Formato das instâncias
 

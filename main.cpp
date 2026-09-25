@@ -50,7 +50,11 @@ void usage() {
     std::cout <<
         "Uso:\n"
         "  hfvrp --method {exact|savings|tabu|ga} --instance CAMINHO [opcoes]\n"
+        "Obrigatorias:\n"
+        "  --method M         metodo de solucao: exact, savings, tabu ou ga\n"
+        "  --instance CAMINHO arquivo .vrp da instancia a resolver\n"
         "Opcoes:\n"
+        "  -h, --help         mostra esta ajuda e encerra\n"
         "  --seed N           semente das meta-heuristicas (padrao 42). Use\n"
         "                     'null', 'random', 'rand' ou 'auto' para sortear\n"
         "                     a semente pelo relogio; o valor sorteado e\n"
